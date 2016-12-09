@@ -1,0 +1,11 @@
+use_frameworks!
+
+target 'AKSessionManager_Example' do
+  pod 'AKSessionManager', :path => '../'
+
+  target 'AKSessionManager_Tests' do
+    inherit! :search_paths
+
+    
+  end
+end
