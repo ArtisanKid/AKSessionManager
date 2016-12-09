@@ -1,0 +1,16 @@
+PODS:
+  - AKSessionManager (0.1.0)
+
+DEPENDENCIES:
+  - AKSessionManager (from `../`)
+
+EXTERNAL SOURCES:
+  AKSessionManager:
+    :path: "../"
+
+SPEC CHECKSUMS:
+  AKSessionManager: ecd4ba55ca632c837cfe28d11ed25895e4183063
+
+PODFILE CHECKSUM: ae3c14292fe9496ca13dcb911c05af0d11035b26
+
+COCOAPODS: 1.0.1
