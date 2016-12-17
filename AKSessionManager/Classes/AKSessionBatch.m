@@ -7,23 +7,25 @@
 //
 
 #import "AKSessionBatch.h"
+#import "AKSessionManagerMacro.h"
 #import "AKSessionChain.h"
 
 @interface AKSessionBatch ()
 
-/**
- *  用于管理batch的group
- */
+@property (nonatomic, assign, getter=isResumed) BOOL resumed;
+
+//用于管理batch的group
 @property (nonatomic, strong) dispatch_group_t group;
 
+//batch中的task数组
+@property (nonatomic, strong) NSHashTable<id/*AKSessionTask/AKSessionChain*/> *tasks;
+
 //batch中的请求总数
+//不能信赖tasks.count，因为在weak情况下，task随时可能释放，导致tasks.count不准确
 @property (nonatomic, assign) NSUInteger totalCount;
 
 //batch中的请求完成数
 @property (atomic, assign) NSUInteger completeCount;
-
-//batch中的task数组
-@property (nonatomic, strong) NSHashTable<id/*AKSessionTask/AKSessionChain*/> *tasks;
 
 @end
 
@@ -33,8 +35,10 @@
     self = [super init];
     if(self) {
         _group = dispatch_group_create();
+        __weak typeof(self) weak_self = self;
         dispatch_group_notify(_group, dispatch_get_main_queue(), ^{
-            !self.complete ?: self.complete();
+            __strong typeof(weak_self) strong_self = weak_self;
+            !strong_self.complete ?: strong_self.complete();
         });
         _tasks = [NSHashTable weakObjectsHashTable];
     }
@@ -42,13 +46,18 @@
 }
 
 - (void)batchTask:(AKSessionTask *)task {
-    //绑定的task不允许是serial类型
-    task.serial = NO;
-    [self.tasks addObject:task];
+    if(task.task.state != NSURLSessionTaskStateRunning) {
+        AKSessionManagerLog(@"不可添加到Batch 任务状态：%@", @(task.task.state));
+        return;
+    }
     
     dispatch_group_enter(self.group);
     self.totalCount++;
     NSUInteger current = self.totalCount;
+    
+    //绑定的task不允许是serial类型
+    task.serial = NO;
+    [self.tasks addObject:task];
     
     void (^baseHandleBlock)() = ^{
         self.completeCount++;
@@ -70,11 +79,16 @@
 }
 
 - (void)batchChain:(AKSessionChain *)chain {
-    [self.tasks addObject:chain];
+    if(chain.isResumed) {
+        AKSessionManagerLog(@"不可添加到Batch Chain is resumed");
+        return;
+    }
     
     dispatch_group_enter(self.group);
     self.totalCount++;
     NSUInteger current = self.totalCount;
+    
+    [self.tasks addObject:chain];
     
     void (^baseHandleBlock)() = ^{
         self.completeCount++;
@@ -90,11 +104,16 @@
 }
 
 - (void)batchBatch:(AKSessionBatch *)batch {
-    [self.tasks addObject:batch];
+    if(batch.isResumed) {
+        AKSessionManagerLog(@"不可添加到Batch Target Batch is resumed");
+        return;
+    }
     
     dispatch_group_enter(self.group);
     self.totalCount++;
     NSUInteger current = self.totalCount;
+    
+    [self.tasks addObject:batch];
     
     void (^baseHandleBlock)() = ^{
         self.completeCount++;
@@ -110,6 +129,11 @@
 }
 
 - (void)resume {
+    if(self.isResumed) {
+        return;
+    }
+    self.resumed = YES;
+    
     [self.tasks.allObjects enumerateObjectsUsingBlock:^(id _Nonnull task, NSUInteger idx, BOOL * _Nonnull stop) {
         [task resume];
     }];

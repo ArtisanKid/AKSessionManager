@@ -7,21 +7,28 @@
 //
 
 #import "AKSessionChain.h"
+#import "AKSessionManagerMacro.h"
 #import "AKSessionBatch.h"
 
 @interface AKSessionChain ()
 
+@property (nonatomic, assign, getter=isResumed) BOOL resumed;
+
+//串行队列
 @property (nonatomic, copy) dispatch_queue_t serialQueue;
+//信号量
 @property (nonatomic, assign, readonly) dispatch_semaphore_t semaphore;
+//用于管理chain的group
+@property (nonatomic, strong) dispatch_group_t group;
+
+//chain中的task数组
+@property (nonatomic, strong) NSHashTable<id/*AKSessionTask/AKSessionBatch*/> *tasks;
 
 //chain中的请求总数
 @property (nonatomic, assign) NSUInteger totalCount;
 
 //chain中的请求完成数
 @property (nonatomic, assign) NSUInteger completeCount;
-
-//chain中的task数组
-@property (nonatomic, strong) NSHashTable<id/*AKSessionTask/AKSessionBatch*/> *tasks;
 
 @end
 
@@ -32,12 +39,26 @@
     if(self) {
         _serialQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_SERIAL);
         _semaphore = dispatch_semaphore_create(1);
+        _group = dispatch_group_create();
+        __weak typeof(self) weak_self = self;
+        dispatch_group_notify(_group, dispatch_get_main_queue(), ^{
+            __strong typeof(weak_self) strong_self = weak_self;
+            !strong_self.complete ?: strong_self.complete();
+        });
         _tasks = [NSHashTable weakObjectsHashTable];
     }
     return self;
 }
 
 - (void)chainTask:(AKSessionTask *)task {
+    if(task.task.state != NSURLSessionTaskStateRunning) {
+        AKSessionManagerLog(@"不可添加到Chain 任务状态：%@", @(task.task.state));
+        return;
+    }
+    
+    dispatch_group_enter(self.group);
+    self.totalCount++;
+    
     __weak typeof(self) weak_self = self;
     dispatch_async(self.serialQueue, ^{
         __strong typeof(weak_self) strong_self = weak_self;
@@ -46,18 +67,12 @@
         //链接的task不允许是serial类型
         task.serial = NO;
         [strong_self.tasks addObject:task];
-        
-        strong_self.totalCount++;
-        NSUInteger current = strong_self.totalCount;
-        
+
         void (^baseHandleBlock)() = ^{
             self.completeCount++;
             !self.progress ?: self.progress(self.totalCount, self.completeCount);
+            dispatch_group_leave(self.group);
             dispatch_semaphore_signal(self.semaphore);
-            
-            if(self.completeCount >= self.totalCount) {
-                !self.complete ?: self.complete();
-            }
         };
         
         AKSessionTaskSuccess success = task.success;
@@ -75,23 +90,26 @@
 }
 
 - (void)chainBatch:(AKSessionBatch *)batch {
+    if(batch.isResumed) {
+        AKSessionManagerLog(@"不可添加到Chain Batch is resumed");
+        return;
+    }
+    
+    dispatch_group_enter(self.group);
+    self.totalCount++;
+    
     __weak typeof(self) weak_self = self;
     dispatch_async(self.serialQueue, ^{
         __strong typeof(weak_self) strong_self = weak_self;
         dispatch_semaphore_wait(strong_self.semaphore, DISPATCH_TIME_FOREVER);
-        [strong_self.tasks addObject:batch];
         
-        strong_self.totalCount++;
-        NSUInteger current = strong_self.totalCount;
+        [strong_self.tasks addObject:batch];
         
         void (^baseHandleBlock)() = ^{
             self.completeCount++;
             !self.progress ?: self.progress(self.totalCount, self.completeCount);
+            dispatch_group_leave(self.group);
             dispatch_semaphore_signal(self.semaphore);
-            
-            if(self.completeCount >= self.totalCount) {
-                !self.complete ?: self.complete();
-            }
         };
         
         AKSessionBatchComplete complete = batch.complete;
@@ -103,23 +121,23 @@
 }
 
 - (void)chainChain:(AKSessionChain *)chain {
+    if(chain.isResumed) {
+        AKSessionManagerLog(@"不可添加到Chain Target Chain is resumed");
+        return;
+    }
+    
     __weak typeof(self) weak_self = self;
     dispatch_async(self.serialQueue, ^{
         __strong typeof(weak_self) strong_self = weak_self;
         dispatch_semaphore_wait(strong_self.semaphore, DISPATCH_TIME_FOREVER);
-        [strong_self.tasks addObject:chain];
         
-        strong_self.totalCount++;
-        NSUInteger current = strong_self.totalCount;
+        [strong_self.tasks addObject:chain];
         
         void (^baseHandleBlock)() = ^{
             self.completeCount++;
             !self.progress ?: self.progress(self.totalCount, self.completeCount);
+            dispatch_group_leave(self.group);
             dispatch_semaphore_signal(self.semaphore);
-            
-            if(self.completeCount >= self.totalCount) {
-                !self.complete ?: self.complete();
-            }
         };
         
         AKSessionBatchComplete complete = chain.complete;
@@ -131,6 +149,11 @@
 }
 
 - (void)resume {
+    if(self.isResumed) {
+        return;
+    }
+    self.resumed = YES;
+    
     [self.tasks.allObjects enumerateObjectsUsingBlock:^(id _Nonnull task, NSUInteger idx, BOOL * _Nonnull stop) {
         [task resume];
     }];

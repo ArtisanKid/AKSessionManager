@@ -16,6 +16,8 @@ typedef void (^AKSessionChainComplete)();
 
 @interface AKSessionChain : NSObject
 
+@property (nonatomic, assign, readonly, getter=isResumed) BOOL resumed;
+
 @property (nonatomic, copy) AKSessionChainProgress progress;
 @property (nonatomic, copy) AKSessionChainComplete complete;
 

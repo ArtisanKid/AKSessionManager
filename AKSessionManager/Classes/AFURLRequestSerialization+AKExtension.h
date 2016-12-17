@@ -23,5 +23,5 @@ extern NSArray * AFQueryStringPairsFromDictionary(NSDictionary *dictionary);
 extern NSString * AFPercentEscapedStringFromString(NSString *string);
 
 //同AFPercentEscapedStringFromString的区别是，添加了对于URL类型参数的支持
-//转义“?”和“/”
+//所谓支持就是添加了对“?”和“/”的转义
 extern NSString * AKPercentEscapedStringFromString(NSString *string);

@@ -16,7 +16,7 @@
 #import <Foundation/Foundation.h>
 #import <AFNetworking/AFNetworking.h>
 
-typedef NS_OPTIONS (NSUInteger, AKRequestMethod) {
+typedef NS_ENUM (NSUInteger, AKRequestMethod) {
     AKRequestMethodGET = 0,
     AKRequestMethodHEAD,
     AKRequestMethodPOST,
@@ -27,10 +27,16 @@ typedef NS_OPTIONS (NSUInteger, AKRequestMethod) {
     AKRequestMethodFORM,
 };
 
-typedef NS_OPTIONS (NSUInteger, AKRequestSerialize) {
+typedef NS_ENUM (NSUInteger, AKRequestSerialize) {
     AKRequestSerializeNormal = 0,
     AKRequestSerializeJSON,
     AKRequestSerializePropertyList
+};
+
+ typedef NS_ENUM (NSUInteger, AKSessionTaskPriority) NS_AVAILABLE(10_10, 8_0) {
+    AKSessionTaskPriorityDefault = 0,
+    AKSessionTaskPriorityLow,
+    AKSessionTaskPriorityHigh
 };
 
 typedef void (^AKSessionTaskProgress)(NSProgress *progress);
@@ -60,6 +66,9 @@ typedef void (^AKRequestForm)(id <AFMultipartFormData> formData);
 @property (nonatomic, copy) AKSessionTaskSuccess success;
 @property (nonatomic, copy) AKSessionTaskFailure failure;
 
+//请求序列化类型
+@property (nonatomic, assign) AKSessionTaskPriority priority NS_AVAILABLE(10_10, 8_0);
+
 //参数中包含URL，编码时需要额外处理
 @property (nonatomic, assign, getter=isContainURL) BOOL containURL;
 
@@ -76,8 +85,6 @@ typedef void (^AKRequestForm)(id <AFMultipartFormData> formData);
 
 //内部的系统会话任务
 @property (nonatomic, weak, readonly) NSURLSessionTask *task;
-//当请求被绑定到一起后，将会具有一个绑定ID
-@property (nonatomic, copy, readonly) NSString *batchID;
 
 #pragma mark - Overridable Method
 

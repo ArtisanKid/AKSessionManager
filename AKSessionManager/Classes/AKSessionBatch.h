@@ -16,6 +16,8 @@ typedef void (^AKSessionBatchComplete)();
 
 @interface AKSessionBatch : NSObject
 
+@property (nonatomic, assign, readonly, getter=isResumed) BOOL resumed;
+
 @property (nonatomic, copy) AKSessionBatchProgress progress;
 @property (nonatomic, copy) AKSessionBatchComplete complete;
 
