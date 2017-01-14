@@ -8,6 +8,8 @@
 
 #import <AFNetworking/AFNetworking.h>
 
+NS_ASSUME_NONNULL_BEGIN
+
 @interface AFHTTPSessionManager (AKExtension)
 
 - (NSURLSessionDataTask *)dataTaskWithHTTPMethod:(NSString *)method
@@ -26,3 +28,5 @@
                        failure:(void (^)(NSURLSessionDataTask *task, NSError *error))failure;
 
 @end
+
+NS_ASSUME_NONNULL_END

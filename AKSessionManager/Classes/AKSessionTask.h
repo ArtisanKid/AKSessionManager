@@ -33,17 +33,21 @@ typedef NS_ENUM (NSUInteger, AKRequestSerialize) {
     AKRequestSerializePropertyList
 };
 
- typedef NS_ENUM (NSUInteger, AKSessionTaskPriority) NS_AVAILABLE(10_10, 8_0) {
+ typedef NS_ENUM (NSUInteger, AKSessionTaskPriority) {
     AKSessionTaskPriorityDefault = 0,
     AKSessionTaskPriorityLow,
     AKSessionTaskPriorityHigh
 };
 
+NS_ASSUME_NONNULL_BEGIN
+
 typedef void (^AKSessionTaskProgress)(NSProgress *progress);
-typedef void (^AKSessionTaskSuccess)(id result);
+typedef void (^AKSessionTaskSuccess)(NSDictionary *result);
 typedef void (^AKSessionTaskFailure)(NSError *error);
-typedef NSDictionary * (^AKRequestBody)();
-typedef void (^AKRequestForm)(id <AFMultipartFormData> formData);
+
+//返回值为业务设定的Hash唯一值
+typedef NSString * _Nullable (^AKRequestBody)(NSMutableDictionary *body);
+typedef NSString * _Nullable (^AKRequestForm)(id<AFMultipartFormData> formData);
 
 /*
  对于AKSessionTask的设计说明
@@ -83,12 +87,22 @@ typedef void (^AKRequestForm)(id <AFMultipartFormData> formData);
 
 #pragma mark - Readonly Property
 
-//内部的系统会话任务
-@property (nonatomic, weak, readonly) NSURLSessionTask *task;
+@property (nonatomic, assign, readonly, getter=isResumed) BOOL resumed;
 
 #pragma mark - Overridable Method
 
+/**
+ 子类可重载方法，用于构建NSURLSessionTask
+ construct方法调用的时机非常晚，在resume开始前一刻才会调用
+ construct方法末尾必须设置task属性
+ */
 - (void)construct;
+
+//内部的系统会话任务
+@property (nonatomic, strong) NSURLSessionTask *task;
+
 - (void)resume;
 
 @end
+
+NS_ASSUME_NONNULL_END

@@ -51,8 +51,8 @@
 }
 
 - (void)chainTask:(AKSessionTask *)task {
-    if(task.task.state != NSURLSessionTaskStateRunning) {
-        AKSessionManagerLog(@"不可添加到Chain 任务状态：%@", @(task.task.state));
+    if(task.isResumed) {
+        AKSessionManagerLog(@"不可添加到Chain 任务锁定");
         return;
     }
     
