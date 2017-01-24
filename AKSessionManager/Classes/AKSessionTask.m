@@ -153,17 +153,18 @@
 }
 
 - (NSString *)methodName {
-    NSString *methodName = nil;
+    NSString *method = nil;
     switch (self.method) {
-        case AKRequestMethodGET: methodName = @"GET"; break;
-        case AKRequestMethodHEAD: methodName = @"HEAD"; break;
-        case AKRequestMethodPOST: methodName = @"POST"; break;
-        case AKRequestMethodPUT: methodName = @"PUT"; break;
-        case AKRequestMethodPATCH: methodName = @"PATCH"; break;
-        case AKRequestMethodDELETE: methodName = @"DELETE"; break;
-        case AKRequestMethodFORM: methodName = @"POST"; break;
-        default: methodName = @"POST"; break;
+        case AKRequestMethodGET: method = @"GET"; break;
+        case AKRequestMethodHEAD: method = @"HEAD"; break;
+        case AKRequestMethodPOST: method = @"POST"; break;
+        case AKRequestMethodPUT: method = @"PUT"; break;
+        case AKRequestMethodPATCH: method = @"PATCH"; break;
+        case AKRequestMethodDELETE: method = @"DELETE"; break;
+        case AKRequestMethodFORM: method = @"POST"; break;
+        default: method = @"POST"; break;
     }
+    return method;
 }
 
 #pragma mark - Public Method

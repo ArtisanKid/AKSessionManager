@@ -11,7 +11,7 @@
 @interface AKSessionManager ()
 
 @property (nonatomic, strong) dispatch_queue_t serialQueue;
-@property (nonatomic, assign) dispatch_semaphore_t semaphore;
+@property (nonatomic, strong) dispatch_semaphore_t semaphore;
 
 @property (nonatomic, strong) NSMutableDictionary<NSString *, NSNumber *> *taskTimestampDicM;
 
@@ -25,18 +25,19 @@
 
 #pragma mark- Singleton Method
 + (AKSessionManager *)manager {
-    static AKSessionManager *sessionManager = nil;
+    static AKSessionManager *sharedInstance = nil;
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
-        sessionManager = [[super allocWithZone:NULL] init];
-        sessionManager.serialQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_SERIAL);
-        sessionManager.semaphore = dispatch_semaphore_create(1);
-        sessionManager.taskTimestampDicM = [NSMutableDictionary dictionary];
-        sessionManager.HTTPRequestSerializer = [AFHTTPRequestSerializer serializer];
-        sessionManager.JSONRequestSerializer = [AFJSONRequestSerializer serializer];
-        sessionManager.propertyListRequestSerializer = [AFPropertyListRequestSerializer serializer];
+        sharedInstance = [[super allocWithZone:NULL] init];
+        sharedInstance.serialQueue = dispatch_queue_create(NULL, DISPATCH_QUEUE_SERIAL);
+        sharedInstance.semaphore = dispatch_semaphore_create(1);
+        sharedInstance.taskTimestampDicM = [NSMutableDictionary dictionary];
+        sharedInstance.sessionManager = [AFHTTPSessionManager manager];
+        sharedInstance.HTTPRequestSerializer = [AFHTTPRequestSerializer serializer];
+        sharedInstance.JSONRequestSerializer = [AFJSONRequestSerializer serializer];
+        sharedInstance.propertyListRequestSerializer = [AFPropertyListRequestSerializer serializer];
     });
-    return sessionManager;
+    return sharedInstance;
 }
 
 + (id)alloc {
