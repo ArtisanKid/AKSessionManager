@@ -50,7 +50,7 @@ typedef NSString * _Nullable (^AKRequestBody)(NSMutableDictionary *body);
 typedef NSString * _Nullable (^AKRequestForm)(id<AFMultipartFormData> formData);
 
 /*
- 对于AKSessionTask的设计说明
+ AKSessionTask的设计说明
  我们定义AKSessionTask为NSURLSessionTask的容器
  NSURLSessionTask本身定义为任务，将request和response同等对待，但是由于NSURLSessionTask由NSURLSession生成，所以NSURLSessionTask不支持差异化配置（只有只读公共属性），不支持设置任务相关的Block。（任务前后的配置都不支持）
  AKSessionTask支持差异化配置，支持设置任务相关的Block，而且AKSessionTask支持子类化，可以在业务层再次添加新的差异化配置
