@@ -8,6 +8,9 @@
 
 #import "AFHTTPSessionManager+AKExtension.h"
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wincomplete-implementation"
+
 @implementation AFHTTPSessionManager (AKExtension)
 
 - (NSURLSessionDataTask *)FORM:(NSString *)URLString
@@ -50,3 +53,5 @@
 }
 
 @end
+
+#pragma clang diagnostic pop

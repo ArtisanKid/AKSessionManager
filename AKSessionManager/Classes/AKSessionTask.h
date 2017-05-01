@@ -46,8 +46,8 @@ typedef void (^AKSessionTaskSuccess)(NSDictionary *result);
 typedef void (^AKSessionTaskFailure)(NSError *error);
 
 //返回值为业务设定的Hash唯一值
-typedef NSString * _Nullable (^AKRequestBody)(NSMutableDictionary *body);
-typedef NSString * _Nullable (^AKRequestForm)(id<AFMultipartFormData> formData);
+typedef NSString * _Nullable (^AKRequestBody)(NSMutableDictionary * _Nullable body);
+typedef NSString * _Nullable (^AKRequestForm)(id<AFMultipartFormData> _Nullable formData);
 
 /*
  AKSessionTask的设计说明

@@ -17,7 +17,7 @@
 //串行队列
 @property (nonatomic, copy) dispatch_queue_t serialQueue;
 //信号量
-@property (nonatomic, assign, readonly) dispatch_semaphore_t semaphore;
+@property (nonatomic, strong, readonly) dispatch_semaphore_t semaphore;
 //用于管理chain的group
 @property (nonatomic, strong) dispatch_group_t group;
 
