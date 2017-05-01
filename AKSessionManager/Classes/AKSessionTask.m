@@ -145,8 +145,12 @@
 - (NSString *)taskID {
     //serial模式下不重复发送同一参数请求，总是保留相同参数的最后一个请求
     NSString *urlID = self.url.length ? @(self.url.hash).description : @"";
+    
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wnonnull"
     NSString *bodyID = self.body ? self.body(nil) : @"";
     NSString *formID = self.form ? self.form(nil) : @"";
+#pragma clang diagnostic pop
     
     NSString *taskID = [NSString stringWithFormat:@"%@:%@:%@", urlID, bodyID, formID];
     return taskID;
