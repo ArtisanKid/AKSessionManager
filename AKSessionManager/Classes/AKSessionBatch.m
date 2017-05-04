@@ -47,7 +47,7 @@
 
 - (void)batchTask:(AKSessionTask *)task {
     if(task.isResumed) {
-        AKSessionManagerLog(@"不可添加到Batch 任务锁定");
+        AKSessionManagerLog(@"不可添加到Batch! 任务锁定");
         return;
     }
     
@@ -80,7 +80,7 @@
 
 - (void)batchChain:(AKSessionChain *)chain {
     if(chain.isResumed) {
-        AKSessionManagerLog(@"不可添加到Batch Chain is resumed");
+        AKSessionManagerLog(@"不可添加到Batch! Chain is resumed");
         return;
     }
     
@@ -105,7 +105,7 @@
 
 - (void)batchBatch:(AKSessionBatch *)batch {
     if(batch.isResumed) {
-        AKSessionManagerLog(@"不可添加到Batch Target Batch is resumed");
+        AKSessionManagerLog(@"不可添加到Batch! Target Batch is resumed");
         return;
     }
     

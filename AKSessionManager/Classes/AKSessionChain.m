@@ -52,7 +52,7 @@
 
 - (void)chainTask:(AKSessionTask *)task {
     if(task.isResumed) {
-        AKSessionManagerLog(@"不可添加到Chain 任务锁定");
+        AKSessionManagerLog(@"不可添加到Chain! 任务锁定");
         return;
     }
     
@@ -91,7 +91,7 @@
 
 - (void)chainBatch:(AKSessionBatch *)batch {
     if(batch.isResumed) {
-        AKSessionManagerLog(@"不可添加到Chain Batch is resumed");
+        AKSessionManagerLog(@"不可添加到Chain! Batch is resumed");
         return;
     }
     
@@ -122,7 +122,7 @@
 
 - (void)chainChain:(AKSessionChain *)chain {
     if(chain.isResumed) {
-        AKSessionManagerLog(@"不可添加到Chain Target Chain is resumed");
+        AKSessionManagerLog(@"不可添加到Chain! Target Chain is resumed");
         return;
     }
     

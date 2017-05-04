@@ -46,8 +46,8 @@ typedef void (^AKSessionTaskSuccess)(NSDictionary *result);
 typedef void (^AKSessionTaskFailure)(NSError *error);
 
 //返回值为业务设定的Hash唯一值
-typedef NSString * _Nullable (^AKRequestBody)(NSMutableDictionary * body);
-typedef NSString * _Nullable (^AKRequestForm)(id<AFMultipartFormData> formData);
+typedef void (^AKRequestBody)(NSMutableDictionary * body);
+typedef void (^AKRequestForm)(id<AFMultipartFormData> formData);
 
 /*
  AKSessionTask的设计说明
@@ -63,6 +63,15 @@ typedef NSString * _Nullable (^AKRequestForm)(id<AFMultipartFormData> formData);
 
 //子类需要设置创建body或者创建form的block
 @property (nonatomic, copy) AKRequestBody body;
+
+/**
+ 快捷设置请求参数
+
+ @param param 参数
+ @param name 参数名
+ */
+- (void)setParam:(id _Nullable)param forName:(NSString *)name;
+
 @property (nonatomic, copy) AKRequestForm form;
 
 @property (nonatomic, copy) AKSessionTaskProgress requestProgress;
@@ -84,6 +93,8 @@ typedef NSString * _Nullable (^AKRequestForm)(id<AFMultipartFormData> formData);
 
 //是否串行请求
 @property (nonatomic, assign, getter=isSerial) BOOL serial;
+//如果需要串行请求，那么子类需要指定taskID
+@property (nonatomic, copy) NSString *taskID;
 
 #pragma mark - Readonly Property
 

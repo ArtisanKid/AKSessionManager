@@ -13,6 +13,7 @@
 
 @interface AKSessionTask ()
 
+@property (nonatomic, strong) NSMutableDictionary *parametersM;
 @property (nonatomic, assign, getter=isResumed) BOOL resumed;
 
 @end
@@ -41,6 +42,14 @@
     }
     
     _body = [body copy];
+}
+
+- (void)setParam:(id _Nullable)param forName:(NSString *)name {
+    if(self.isResumed) {
+        return;
+    }
+    
+    self.parametersM[name] = param;
 }
 
 - (void)setForm:(AKRequestForm)form {
@@ -143,17 +152,12 @@
 #pragma mark - Private Method
 
 - (NSString *)taskID {
-    //serial模式下不重复发送同一参数请求，总是保留相同参数的最后一个请求
-    NSString *urlID = self.url.length ? @(self.url.hash).description : @"";
+    if(_taskID) {
+        return _taskID;
+    }
     
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wnonnull"
-    NSString *bodyID = self.body ? self.body(nil) : @"";
-    NSString *formID = self.form ? self.form(nil) : @"";
-#pragma clang diagnostic pop
-    
-    NSString *taskID = [NSString stringWithFormat:@"%@:%@:%@", urlID, bodyID, formID];
-    return taskID;
+    _taskID = @([NSDate date].timeIntervalSinceNow * 1000).description;
+    return _taskID;
 }
 
 - (NSString *)methodName {
@@ -171,13 +175,21 @@
     return method;
 }
 
+- (NSMutableDictionary *)parametersM {
+    if(_parametersM) {
+        return _parametersM;
+    }
+    _parametersM = [NSMutableDictionary dictionary];
+    return _parametersM;
+}
+
 #pragma mark - Public Method
 - (void)construct {
     self.resumed = YES;//锁定所有属性更改
     
     AKSessionManager *manager = AKSessionManager.manager;
     
-    NSTimeInterval startTimestamp = NSDate.date.timeIntervalSince1970;
+    NSTimeInterval startTimestamp = [NSDate date].timeIntervalSince1970;
     if(self.isSerial) {
         manager.taskTimestampDicM[self.taskID] = @(startTimestamp);
     }
@@ -252,12 +264,13 @@
         !self.failure ? : self.failure(error);
     };
     
-    NSMutableDictionary *parameters = [NSMutableDictionary dictionary];
-    self.body ? self.body(parameters) : nil;
+    //拼装参数字典
+    self.body ? self.body(self.parametersM) : nil;
+    
     if(self.method != AKRequestMethodFORM) {
         self.task = [manager.sessionManager dataTaskWithHTTPMethod:self.methodName
                                                          URLString:self.url
-                                                        parameters:[parameters copy]
+                                                        parameters:[self.parametersM copy]
                                                     uploadProgress:self.requestProgress
                                                   downloadProgress:self.responseProgress
                                                            success:innerSuccess
@@ -267,7 +280,7 @@
             self.form ? self.form(formData) : nil;
         };
         self.task = [manager.sessionManager FORM:self.url
-                                      parameters:parameters
+                                      parameters:[self.parametersM copy]
                        constructingBodyWithBlock:innerForm
                                         progress:self.requestProgress
                                          success:innerSuccess
