@@ -7,6 +7,7 @@
 //
 
 #import "AKSessionTask.h"
+#import "AKSessionManagerMacro.h"
 #import "AKSessionManager.h"
 #import "AFHTTPSessionManager+AKExtension.h"
 #import "AFURLRequestSerialization+AKExtension.h"
@@ -46,6 +47,12 @@
 
 - (void)setParam:(id _Nullable)param forName:(NSString *)name {
     if(self.isResumed) {
+        return;
+    }
+    
+    if(![name isKindOfClass:[NSString class]]
+       || !name.length) {
+        AKSessionManagerLog(@"参数名不可为空");
         return;
     }
     

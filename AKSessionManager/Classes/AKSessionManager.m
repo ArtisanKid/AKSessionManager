@@ -33,6 +33,10 @@
         sharedInstance.semaphore = dispatch_semaphore_create(1);
         sharedInstance.taskTimestampDicM = [NSMutableDictionary dictionary];
         sharedInstance.sessionManager = [AFHTTPSessionManager manager];
+        
+        //已经支持的类型 @"application/json", @"text/json", @"text/javascript"
+        sharedInstance.sessionManager.responseSerializer.acceptableContentTypes = [sharedInstance.sessionManager.responseSerializer.acceptableContentTypes setByAddingObjectsFromSet:[NSSet setWithObjects:@"text/html", @"text/plain", @"text/html", nil]];
+        
         sharedInstance.HTTPRequestSerializer = [AFHTTPRequestSerializer serializer];
         sharedInstance.JSONRequestSerializer = [AFJSONRequestSerializer serializer];
         sharedInstance.propertyListRequestSerializer = [AFPropertyListRequestSerializer serializer];
