@@ -7,7 +7,7 @@
 //
 
 #import "AKSessionChain.h"
-#import "AKSessionManagerMacro.h"
+#import "AKSessionManagerMacros.h"
 #import "AKSessionBatch.h"
 
 @interface AKSessionChain ()

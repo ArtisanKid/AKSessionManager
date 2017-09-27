@@ -18,6 +18,8 @@
 @property (nonatomic, strong, readonly) dispatch_queue_t serialQueue;
 @property (nonatomic, strong, readonly) dispatch_semaphore_t semaphore;
 
+@property (nonatomic, strong, readonly) NSMutableSet *serialTasksM;
+
 //@{TaskID : Timestamp}
 @property (nonatomic, strong, readonly) NSMutableDictionary<NSString *, NSNumber *> *taskTimestampDicM;
 

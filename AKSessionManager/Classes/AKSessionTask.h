@@ -100,18 +100,12 @@ typedef void (^AKRequestForm)(id<AFMultipartFormData> formData);
 
 @property (nonatomic, assign, readonly, getter=isResumed) BOOL resumed;
 
+//内部的系统会话任务
+@property (nonatomic, strong, readonly) NSURLSessionTask *task;
+
 #pragma mark - Overridable Method
 
-/**
- 子类可重载方法，用于构建NSURLSessionTask
- construct方法调用的时机非常晚，在resume开始前一刻才会调用
- construct方法末尾必须设置task属性
- */
-- (void)construct;
-
-//内部的系统会话任务
-@property (nonatomic, strong) NSURLSessionTask *task;
-
+//子类可重载
 - (void)resume;
 
 @end

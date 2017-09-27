@@ -7,19 +7,28 @@
 //
 
 #import "AKSessionTask.h"
-#import "AKSessionManagerMacro.h"
+#import "AKSessionManagerMacros.h"
 #import "AKSessionManager.h"
 #import "AFHTTPSessionManager+AKExtension.h"
 #import "AFURLRequestSerialization+AKExtension.h"
 
 @interface AKSessionTask ()
 
+@property (nonatomic, strong) NSURLSessionTask *task;
 @property (nonatomic, strong) NSMutableDictionary *parametersM;
 @property (nonatomic, assign, getter=isResumed) BOOL resumed;
 
 @end
 
 @implementation AKSessionTask
+
+- (instancetype)init {
+    self = [super init];
+    if(self) {
+        _parametersM = [NSMutableDictionary dictionary];
+    }
+    return self;
+}
 
 - (void)setUrl:(NSString *)url {
     if(self.isResumed) {
@@ -182,24 +191,60 @@
     return method;
 }
 
-- (NSMutableDictionary *)parametersM {
-    if(_parametersM) {
-        return _parametersM;
-    }
-    _parametersM = [NSMutableDictionary dictionary];
-    return _parametersM;
-}
-
 #pragma mark - Public Method
-- (void)construct {
+
+- (void)resume {
     self.resumed = YES;//锁定所有属性更改
     
     AKSessionManager *manager = AKSessionManager.manager;
     
-    NSTimeInterval startTimestamp = [NSDate date].timeIntervalSince1970;
-    if(self.isSerial) {
-        manager.taskTimestampDicM[self.taskID] = @(startTimestamp);
+    [self serialHandle];
+    [self serializeHandle];
+    [self containURLHandle];
+    [self createHandle];
+    
+    //启动请求
+    __weak typeof(manager) weak_manager = manager;
+    dispatch_async(manager.serialQueue, ^{
+        __strong typeof(weak_manager) strong_manager = weak_manager;
+
+        //获取信号量，如果不是barrier类型的请求，立刻释放信号量
+        dispatch_semaphore_wait(strong_manager.semaphore, DISPATCH_TIME_FOREVER);
+        if(!self.isBarrier) {
+            dispatch_semaphore_signal(strong_manager.semaphore);
+        }
+        
+        [self.task resume];
+    });
+}
+
+#pragma mark - Private Method
+
+- (void)serialHandle {
+    AKSessionManager *manager = AKSessionManager.manager;
+    
+    if(!self.isSerial) {
+        return;
     }
+    
+    [[manager.serialTasksM allObjects] enumerateObjectsUsingBlock:^(AKSessionTask * _Nonnull task, NSUInteger idx, BOOL * _Nonnull stop) {
+        if(![task isKindOfClass:[self class]]) {
+            return;
+        }
+        
+        if(![task.taskID isEqualToString:self.taskID]) {
+            return;
+        }
+        
+        *stop = YES;
+        [manager.serialTasksM removeObject:task];
+    }];
+    
+    [manager.serialTasksM addObject:self];
+}
+
+- (void)serializeHandle {
+    AKSessionManager *manager = AKSessionManager.manager;
     
     switch (self.serialize) {
         case AKRequestSerializeNormal: {
@@ -218,61 +263,49 @@
             manager.sessionManager.requestSerializer = manager.HTTPRequestSerializer;
             break;
     }
+}
+
+- (void)containURLHandle {
+    AKSessionManager *manager = AKSessionManager.manager;
     
-    if(self.containURL) {//参数中包含URL
-        [manager.sessionManager.requestSerializer setQueryStringSerializationWithBlock:^NSString * _Nonnull(NSURLRequest * _Nonnull request, id  _Nonnull parameters, NSError * _Nullable __autoreleasing * _Nullable error) {
-            //TODO:这里不知道应该产生什么样的错误，因为全部逻辑都是直接照抄AF的，所以这里的错误处理暂时放弃
-            *error = nil;
-            
-            NSMutableArray *mutablePairs = [NSMutableArray array];
-            for (AFQueryStringPair *pair in AFQueryStringPairsFromDictionary(parameters)) {
-                if (!pair.value || [pair.value isEqual:[NSNull null]]) {
-                    [mutablePairs addObject:AFPercentEscapedStringFromString([pair.field description])];
-                } else {
-                    [mutablePairs addObject:[NSString stringWithFormat:@"%@=%@", AKPercentEscapedStringFromString([pair.field description]), AKPercentEscapedStringFromString([pair.value description])]];
-                }
-            }
-            return [mutablePairs componentsJoinedByString:@"&"];
-        }];
-    } else {
+    if(!self.isContainURL) {//参数中包含URL
         [manager.sessionManager.requestSerializer setQueryStringSerializationWithBlock:nil];
+        return;
     }
     
-    /**
-     *  请求无论是成功还是失败都需要处理的逻辑
-     *  返回值的意义：用于区分serial模式下，是否最后一个请求
-     */
-    BOOL (^baseHandleBlock)() = ^BOOL {
-        if(self.isBarrier) {
-            dispatch_semaphore_signal(manager.semaphore);
-        }
-
-        if(self.isSerial) {
-            if(manager.taskTimestampDicM[self.taskID].doubleValue != startTimestamp) {
-                return NO;
-            }
-            manager.taskTimestampDicM[self.taskID] = nil;
-        }
+    [manager.sessionManager.requestSerializer setQueryStringSerializationWithBlock:^NSString * _Nonnull(NSURLRequest * _Nonnull request, id  _Nonnull parameters, NSError * _Nullable __autoreleasing * _Nullable error) {
+        //TODO:这里不知道应该产生什么样的错误，因为全部逻辑都是直接照抄AF的，所以这里的错误处理暂时放弃
+        *error = nil;
         
-        return YES;
-    };
+        NSMutableArray *mutablePairs = [NSMutableArray array];
+        for (AFQueryStringPair *pair in AFQueryStringPairsFromDictionary(parameters)) {
+            if (!pair.value || [pair.value isEqual:[NSNull null]]) {
+                [mutablePairs addObject:AFPercentEscapedStringFromString([pair.field description])];
+            } else {
+                [mutablePairs addObject:[NSString stringWithFormat:@"%@=%@", AKPercentEscapedStringFromString([pair.field description]), AKPercentEscapedStringFromString([pair.value description])]];
+            }
+        }
+        return [mutablePairs componentsJoinedByString:@"&"];
+    }];
+}
+
+- (void)createHandle {
+    AKSessionManager *manager = AKSessionManager.manager;
+    
+    //拼装参数字典
+    !self.body ? : self.body(self.parametersM);
     
     void (^innerSuccess)(NSURLSessionDataTask * _Nonnull task, id _Nullable responseObject) = ^(NSURLSessionDataTask * _Nonnull task, id responseObject) {
-        if(!baseHandleBlock()) {
-            return;
-        }
-        !self.success ? : self.success(responseObject ? : nil);
+        [self finishWithHandler:^{
+            !self.success ? : self.success(responseObject ? : nil);
+        }];
     };
     
     void (^innerFailure)(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) = ^(NSURLSessionDataTask * _Nullable task, NSError * _Nonnull error) {
-        if(!baseHandleBlock()) {
-            return;
-        }
-        !self.failure ? : self.failure(error);
+        [self finishWithHandler:^{
+            !self.failure ? : self.failure(error);
+        }];
     };
-    
-    //拼装参数字典
-    self.body ? self.body(self.parametersM) : nil;
     
     if(self.method != AKRequestMethodFORM) {
         self.task = [manager.sessionManager dataTaskWithHTTPMethod:self.methodName
@@ -295,22 +328,26 @@
     }
 }
 
-- (void)resume {
-    [self construct];
-    
+/**
+ *  请求无论是成功还是失败都需要处理的逻辑
+ *  返回值的意义：用于区分serial模式下，是否最后一个请求
+ */
+- (void)finishWithHandler:(dispatch_block_t)handler {
     AKSessionManager *manager = AKSessionManager.manager;
-    __weak typeof(manager) weak_manager = manager;
-    dispatch_async(manager.serialQueue, ^{
-        __strong typeof(weak_manager) strong_manager = weak_manager;
-
-        //获取信号量，如果不是barrier类型的请求，立刻释放信号量
-        dispatch_semaphore_wait(strong_manager.semaphore, DISPATCH_TIME_FOREVER);
-        if(!self.isBarrier) {
-            dispatch_semaphore_signal(strong_manager.semaphore);
+    
+    if(self.isSerial) {
+        if([manager.serialTasksM containsObject:self]) {
+            return;
         }
         
-        [self.task resume];
-    });
+        [manager.serialTasksM removeObject:self];
+    }
+    
+    !handler ? : handler();
+    
+    if(self.isBarrier) {
+        dispatch_semaphore_signal(manager.semaphore);
+    }
 }
 
 @end
