@@ -11,7 +11,7 @@
 
 @interface AKSessionManager : NSObject
 
-+ (AKSessionManager *)manager;
+@property (class, nonatomic, strong, readonly) AKSessionManager *manager;
 
 @property (nonatomic, strong) AFHTTPSessionManager *sessionManager;
 
