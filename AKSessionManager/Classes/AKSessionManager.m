@@ -19,6 +19,13 @@
 @property (nonatomic, strong) AFJSONRequestSerializer *JSONRequestSerializer;
 @property (nonatomic, strong) AFPropertyListRequestSerializer *propertyListRequestSerializer;
 
+@property (nonatomic, strong) AFHTTPResponseSerializer *HTTPResponseSerializer;
+@property (nonatomic, strong) AFJSONResponseSerializer *JSONResponseSerializer;
+@property (nonatomic, strong) AFXMLParserResponseSerializer *XMLParserResponseSerializer;
+@property (nonatomic, strong) AFPropertyListResponseSerializer *propertyListResponseSerializer;
+@property (nonatomic, strong) AFImageResponseSerializer *imageResponseSerializer;
+@property (nonatomic, strong) AFCompoundResponseSerializer *compoundResponseSerializer;
+
 @end
 
 @implementation AKSessionManager
@@ -36,6 +43,9 @@
         
         //已经支持的类型 @"application/json", @"text/json", @"text/javascript"
         sharedInstance.sessionManager.responseSerializer.acceptableContentTypes = [sharedInstance.sessionManager.responseSerializer.acceptableContentTypes setByAddingObjectsFromSet:[NSSet setWithObjects:@"text/html", @"text/plain", @"text/html", nil]];
+        
+        AFJSONResponseSerializer *responseSerializer = (AFJSONResponseSerializer *)sharedInstance.sessionManager.responseSerializer;
+        responseSerializer.readingOptions = NSJSONReadingAllowFragments;
         
         sharedInstance.HTTPRequestSerializer = [AFHTTPRequestSerializer serializer];
         sharedInstance.JSONRequestSerializer = [AFJSONRequestSerializer serializer];
