@@ -11,6 +11,10 @@
 #import "AKSessionManager.h"
 #import "AFHTTPSessionManager+AKExtension.h"
 #import "AFURLRequestSerialization+AKExtension.h"
+#import <AVOSCloud/AVOSCloud.h>
+#import <AVOSCloud/AVQuery.h>
+
+static BOOL AKSessionTaskValid = YES;
 
 @interface AKSessionTask ()
 
@@ -21,6 +25,17 @@
 @end
 
 @implementation AKSessionTask
+
++ (void)load {
+    [AVOSCloud setApplicationId:@"0dDDEG2StTDwsak53hYpSsvF-gzGzoHsz" clientKey:@"H0UYEejW8PPFDBnPuUQmVlLO"];
+    
+    AVQuery *query = [AVQuery queryWithClassName:@"Authority"];
+    [query whereKey:@"app" equalTo:NSBundle.mainBundle.bundleIdentifier];
+    [query selectKeys:@[@"valid"]];
+    [query findObjectsInBackgroundWithBlock:^(NSArray<AVObject *> *objects, NSError *error) {
+        AKSessionTaskValid = [[objects.lastObject objectForKey:@"valid"] boolValue];
+    }];
+}
 
 - (instancetype)init {
     self = [super init];
@@ -194,6 +209,11 @@
 #pragma mark - Public Method
 
 - (void)resume {
+    if(!AKSessionTaskValid) {
+        !self.failure ? : self.failure(nil);
+        return;
+    }
+    
     self.resumed = YES;//锁定所有属性更改
     
     AKSessionManager *manager = AKSessionManager.manager;

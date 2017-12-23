@@ -16,6 +16,8 @@ PODS:
     - AFNetworking/NSURLSession
   - AKSessionManager (0.1.0):
     - AFNetworking
+    - AVOSCloud
+  - AVOSCloud (8.0.6)
 
 DEPENDENCIES:
   - AKSessionManager (from `../`)
@@ -26,8 +28,9 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   AFNetworking: 5e0e199f73d8626b11e79750991f5d173d1f8b67
-  AKSessionManager: b0ccea70ee7c05423fc046ec2f2321872f1d8f57
+  AKSessionManager: 3c2074403996b97b250fedb5a3f6553e4863f7b2
+  AVOSCloud: 3fc5837eb4019f75eecd3064ed79d92656cbe2b5
 
 PODFILE CHECKSUM: ae3c14292fe9496ca13dcb911c05af0d11035b26
 
-COCOAPODS: 1.1.1
+COCOAPODS: 1.3.1
